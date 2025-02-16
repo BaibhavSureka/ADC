@@ -1,9 +1,6 @@
 import express from "express";
 import cors from "cors";
 import fetch from "node-fetch";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -11,10 +8,8 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-const API_PREFIX = "/api";
-
-// ✅ FDA API: Drug Reaction Statistics
-app.get(`${API_PREFIX}/fda/stats`, async (req, res) => {
+// FDA API endpoint for drug reaction statistics
+app.get("/api/fda/stats", async (req, res) => {
   try {
     const response = await fetch(
       "https://api.fda.gov/drug/event.json?count=patient.reaction.reactionmeddrapt.exact&limit=10"
@@ -28,12 +23,13 @@ app.get(`${API_PREFIX}/fda/stats`, async (req, res) => {
   }
 });
 
-// ✅ FDA API: Drug Trends Over Time
-app.get(`${API_PREFIX}/fda/drug-trends`, async (req, res) => {
+// FDA API endpoint for drug search trends over time
+app.get("/api/fda/drug-trends", async (req, res) => {
   const { drug } = req.query;
   if (!drug) return res.status(400).json({ error: "Drug name is required" });
 
   try {
+    // Fixed the URL template by enclosing it with backticks
     const response = await fetch(
       `https://api.fda.gov/drug/event.json?search=patient.drug.medicinalproduct:"${drug}"&count=receivedate`
     );
@@ -46,9 +42,9 @@ app.get(`${API_PREFIX}/fda/drug-trends`, async (req, res) => {
   }
 });
 
-// ✅ Treatment Centers API (Example Using findtreatment.gov)
-app.get(`${API_PREFIX}/treatment-centers`, async (req, res) => {
-  const { lat, lon, limitType = 2, limitValue = 20000 } = req.query;
+// Treatment centers (example using findtreatment.gov API)
+app.get("/api/treatment-centers", async (req, res) => {
+  const { lat, lon, limitType = 2, limitValue = 20000 } = req.query; // Default: 20km radius
 
   if (!lat || !lon) {
     return res
@@ -73,5 +69,25 @@ app.get(`${API_PREFIX}/treatment-centers`, async (req, res) => {
   }
 });
 
-// ✅ Vercel Export (Required for Serverless Deployment)
-export default app;
+// Drug details from DrugBank (placeholder)
+// app.get("/api/drug-details", async (req, res) => {
+//   const { drug } = req.query;
+//   if (!drug) return res.status(400).json({ error: "Drug name is required" });
+
+//   try {
+//     // Replace with actual DrugBank API call and include API key as needed.
+//     const response = await fetch(
+//       `https://api.drugbank.com/discovery/v1/drugs.json?search=${drug}`,
+//       { headers: { Authorization: "Bearer YOUR_API_KEY_HERE" } }
+//     );
+//     const data = await response.json();
+//     res.json(data);
+//   } catch (error) {
+//     console.error("Error fetching drug details:", error);
+//     res.status(500).json({ error: "Failed to fetch drug details" });
+//   }
+// });
+
+app.listen(5000, () => {
+  console.log("Server is running on port 5000");
+});

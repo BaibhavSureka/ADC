@@ -9,9 +9,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-// ✅ Set API Base URL from .env file
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
-
 const Resources = () => {
   const [drugStats, setDrugStats] = useState([]);
   const [drugTrends, setDrugTrends] = useState([]);
@@ -21,11 +18,10 @@ const Resources = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState(null);
 
-  // ✅ Fetch Drug Statistics on Load
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/fda/stats`);
+        const response = await fetch("http://localhost:5000/api/fda/stats");
         if (!response.ok) throw new Error("Failed to fetch data");
         const data = await response.json();
         setDrugStats(data);
@@ -37,23 +33,26 @@ const Resources = () => {
     fetchData();
   }, []);
 
-  // ✅ Search Drug Trends
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     setLoading(true);
     setError(null);
 
     try {
-      const trendsResponse = await fetch(`${API_BASE_URL}/api/fda/drug-trends?drug=${searchQuery}`);
+      const trendsResponse = await fetch(
+        `http://localhost:5000/api/fda/drug-trends?drug=${searchQuery}`
+      );
       if (!trendsResponse.ok) throw new Error("Failed to fetch drug trends");
       const trendsData = await trendsResponse.json();
       setDrugTrends(trendsData);
 
-      // ✅ Fetch Drug Details (If API is active)
-      const detailsResponse = await fetch(`${API_BASE_URL}/api/drug-details?drug=${searchQuery}`);
-      if (!detailsResponse.ok) throw new Error("Failed to fetch drug details");
-      const detailsData = await detailsResponse.json();
-      setDrugDetails(detailsData);
+      // Commented out the drug details API call
+      // const detailsResponse = await fetch(
+      //   `http://localhost:5000/api/drug-details?drug=${searchQuery}`
+      // );
+      // if (!detailsResponse.ok) throw new Error("Failed to fetch drug details");
+      // const detailsData = await detailsResponse.json();
+      // setDrugDetails(detailsData);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -61,17 +60,21 @@ const Resources = () => {
     }
   };
 
-  // ✅ Fetch Treatment Centers
   const fetchTreatmentCenters = async () => {
     if (loading) return;
+
     setLoading(true);
     setError(null);
 
     try {
-      const lat = "40.7128"; // Example: New York City
+      // Example: Fetch centers within a 20km radius of New York City
+      const lat = "40.7128";
       const lon = "-74.0060";
 
-      const response = await fetch(`${API_BASE_URL}/api/treatment-centers?lat=${lat}&lon=${lon}`);
+      const response = await fetch(
+        `http://localhost:5000/api/treatment-centers?lat=${lat}&lon=${lon}`
+      );
+
       if (!response.ok) throw new Error("Failed to fetch treatment centers");
       const data = await response.json();
       setTreatmentCenters(data);
@@ -88,7 +91,7 @@ const Resources = () => {
         Drug Reaction Statistics
       </h2>
 
-      {/* ✅ Bar Chart for Drug Statistics */}
+      {/* Bar Chart for Drug Reaction Statistics */}
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={drugStats}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -99,7 +102,7 @@ const Resources = () => {
         </BarChart>
       </ResponsiveContainer>
 
-      {/* ✅ Search Input & Button */}
+      {/* Search Input & Button */}
       <div style={{ marginTop: "20px" }}>
         <input
           type="text"
@@ -132,7 +135,7 @@ const Resources = () => {
         </button>
       </div>
 
-      {/* ✅ Error Message */}
+      {/* Error Message */}
       {error && (
         <div
           style={{
@@ -148,7 +151,7 @@ const Resources = () => {
         </div>
       )}
 
-      {/* ✅ Bar Chart for Drug Trends */}
+      {/* Bar Chart for Drug Trends */}
       {drugTrends.length > 0 && (
         <div style={{ marginTop: "20px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "10px" }}>
@@ -166,7 +169,7 @@ const Resources = () => {
         </div>
       )}
 
-      {/* ✅ Drug Details */}
+      {/* Drug Details */}
       {drugDetails && (
         <div style={{ marginTop: "20px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "10px" }}>
@@ -186,7 +189,7 @@ const Resources = () => {
         </div>
       )}
 
-      {/* ✅ Treatment Centers */}
+      {/* Treatment Centers */}
       {treatmentCenters.length > 0 && (
         <div style={{ marginTop: "20px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "10px" }}>
@@ -194,12 +197,23 @@ const Resources = () => {
           </h2>
           <ul>
             {treatmentCenters.map((center, index) => (
-              <li key={index} style={{ marginBottom: "10px", borderBottom: "1px solid #ddd", paddingBottom: "10px" }}>
+              <li
+                key={index}
+                style={{
+                  marginBottom: "10px",
+                  borderBottom: "1px solid #ddd",
+                  paddingBottom: "10px",
+                }}
+              >
                 <strong>{center.name1 || center.name2}</strong>
                 <p>{center.street1}, {center.city}, {center.state} {center.zip}</p>
                 <p><strong>Phone:</strong> {center.phone || "N/A"}</p>
                 {center.website && (
-                  <p><a href={center.website} target="_blank" rel="noopener noreferrer">Visit Website</a></p>
+                  <p>
+                    <a href={center.website} target="_blank" rel="noopener noreferrer">
+                      Visit Website
+                    </a>
+                  </p>
                 )}
               </li>
             ))}
@@ -207,7 +221,7 @@ const Resources = () => {
         </div>
       )}
 
-      {/* ✅ Button to Fetch Treatment Centers */}
+      {/* Button to Fetch Treatment Centers */}
       <button
         onClick={fetchTreatmentCenters}
         disabled={loading}
