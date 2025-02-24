@@ -1,51 +1,112 @@
 import React, { useState, useEffect } from "react";
+import { Bar } from "react-chartjs-2";
 import {
   BarChart,
-  Bar,
+  Bar as RechartsBar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
+import { Loader } from "lucide-react";
 
-const Resources = () => {
+const API_KEY = "YOUR_GOOGLE_MAPS_API_KEY";
+const LOCATION = "Vellore, Tamil Nadu 632014";
+
+const Dashboard = () => {
+  const [graphData, setGraphData] = useState(null);
   const [drugStats, setDrugStats] = useState([]);
   const [drugTrends, setDrugTrends] = useState([]);
   const [treatmentCenters, setTreatmentCenters] = useState([]);
-  const [drugDetails, setDrugDetails] = useState(null);
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState(null);
+  const [mapVisible, setMapVisible] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch("http://localhost:5000/api/fda/stats");
-        if (!response.ok) throw new Error("Failed to fetch data");
-        const data = await response.json();
-        setDrugStats(data);
-      } catch (error) {
-        setError(error.message);
-      }
-    };
-
-    fetchData();
+    fetchGraphData();
+    fetchDrugStats();
   }, []);
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+  const fetchGraphData = async () => {
+    try {
+      const response = await fetch("YOUR_GRAPH_API_URL");
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (!data.labels || !data.values) {
+        throw new Error("Invalid graph data format");
+      }
+
+      setGraphData(data);
+    } catch (err) {
+      console.error("Error fetching graph data:", err);
+      setError("Failed to load graph data. Check API response.");
+    }
+  };
+
+  const fetchDrugStats = async () => {
+    try {
+      const response = await fetch(
+        "https://api.fda.gov/drug/event.json?count=patient.reaction.reactionmeddrapt.exact&limit=10"
+      );
+
+      if (!response.ok) throw new Error("Failed to fetch drug statistics");
+
+      const data = await response.json();
+      setDrugStats(data.results);
+    } catch (error) {
+      console.error("Drug Stats Fetch Error:", error);
+      setError(error.message);
+    }
+  };
+
+  const fetchTreatmentCenters = async () => {
+    if (!API_KEY || API_KEY === "YOUR_GOOGLE_MAPS_API_KEY") {
+      setError("Invalid API Key. Please update your API Key.");
+      return;
+    }
     setLoading(true);
     setError(null);
 
     try {
-      const trendsResponse = await fetch(
-        `http://localhost:5000/api/fda/drug-trends?drug=${searchQuery}`
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=treatment+centers+in+${LOCATION}&key=${API_KEY}`
       );
-      if (!trendsResponse.ok) throw new Error("Failed to fetch drug trends");
-      const trendsData = await trendsResponse.json();
-      setDrugTrends(trendsData);
+
+      const data = await response.json();
+      setTreatmentCenters(data.results || []);
+      setMapVisible(true);
+    } catch (err) {
+      console.error("Error fetching treatment centers:", err);
+      setError("Failed to fetch treatment centers. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDrugTrends = async () => {
+    if (!search.trim()) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `https://api.fda.gov/drug/event.json?search=patient.drug.medicinalproduct:"${search}"&count=receivedate`
+      );
+
+      if (!response.ok) throw new Error("Failed to fetch drug trends");
+
+      const data = await response.json();
+      setDrugTrends(data.results);
     } catch (error) {
+      console.error("Drug Trends Fetch Error:", error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -53,110 +114,84 @@ const Resources = () => {
   };
 
   return (
-    <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
-      <h2 style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "10px" }}>
-        Drug Reaction Statistics
-      </h2>
+    <div className="container mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
+      {error && <p className="text-red-500">{error}</p>}
 
-      {/* Bar Chart for Drug Reaction Statistics */}
+      <div className="flex justify-between items-center mb-6">
+        <Input
+          type="text"
+          placeholder="Enter drug name..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="p-2 border rounded w-1/3"
+        />
+        <Button onClick={fetchDrugTrends} disabled={loading}>
+          {loading ? <Loader className="animate-spin" /> : "Search Drug Trends"}
+        </Button>
+        <Button onClick={fetchTreatmentCenters} disabled={loading}>
+          {loading ? <Loader className="animate-spin" /> : "Find Treatment Centers"}
+        </Button>
+      </div>
+
+      {graphData && (
+        <div className="w-full max-w-4xl mx-auto">
+          <Bar
+            data={{
+              labels: graphData.labels,
+              datasets: [
+                {
+                  label: "Data",
+                  data: graphData.values,
+                  backgroundColor: "#4CAF50",
+                },
+              ],
+            }}
+            options={{ responsive: true, maintainAspectRatio: false }}
+          />
+        </div>
+      )}
+
+      <h2 className="mt-6 text-xl font-bold">Drug Reaction Statistics</h2>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={drugStats}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="term" />
           <YAxis />
           <Tooltip />
-          <Bar dataKey="count" fill="#3b82f6" />
+          <RechartsBar dataKey="count" fill="#3b82f6" />
         </BarChart>
       </ResponsiveContainer>
 
-      {/* Search Input & Button */}
-      <div style={{ marginTop: "20px" }}>
-        <input
-          type="text"
-          placeholder="Enter drug name..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{
-            padding: "10px",
-            border: "1px solid #ccc",
-            borderRadius: "5px",
-            width: "100%",
-            marginBottom: "10px",
-          }}
-        />
-        <button
-          onClick={handleSearch}
-          disabled={loading}
-          style={{
-            padding: "10px 15px",
-            backgroundColor: loading ? "#ccc" : "#3b82f6",
-            color: "white",
-            border: "none",
-            borderRadius: "5px",
-            cursor: loading ? "not-allowed" : "pointer",
-            marginTop: "10px",
-            width: "100%",
-          }}
-        >
-          {loading ? "Searching..." : "Search Drug Trends"}
-        </button>
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div
-          style={{
-            backgroundColor: "#fee2e2",
-            padding: "10px",
-            border: "1px solid #f87171",
-            borderRadius: "5px",
-            marginTop: "10px",
-            color: "#b91c1c",
-          }}
-        >
-          <strong>Error:</strong> {error}
-        </div>
-      )}
-
-      {/* Bar Chart for Drug Trends */}
       {drugTrends.length > 0 && (
-        <div style={{ marginTop: "20px" }}>
-          <h2 style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "10px" }}>
-            Drug Trend Over Time
-          </h2>
+        <div>
+          <h2 className="mt-6 text-xl font-bold">Drug Trend Over Time</h2>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={drugTrends}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="time" />
               <YAxis />
               <Tooltip />
-              <Bar dataKey="count" fill="#22c55e" />
+              <RechartsBar dataKey="count" fill="#22c55e" />
             </BarChart>
           </ResponsiveContainer>
         </div>
       )}
 
-      {/* Drug Details */}
-      {drugDetails && (
-        <div style={{ marginTop: "20px" }}>
-          <h2 style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "10px" }}>
-            Drug Details
-          </h2>
-          <div
-            style={{
-              backgroundColor: "#f9f9f9",
-              padding: "15px",
-              border: "1px solid #ddd",
-              borderRadius: "5px",
-            }}
-          >
-            <p><strong>Name:</strong> {drugDetails.name}</p>
-            <p><strong>Description:</strong> {drugDetails.description}</p>
-          </div>
+      {mapVisible && (
+        <div className="mt-6 w-full h-96">
+          <iframe
+            title="Google Maps"
+            width="100%"
+            height="100%"
+            loading="lazy"
+            allowFullScreen
+            src={`https://www.google.com/maps/embed/v1/search?key=${API_KEY}&q=treatment+centers+in+${LOCATION}`}
+          ></iframe>
         </div>
-      )}      
+      )}
     </div>
   );
 };
 
-export default Resources;
+export default Dashboard;
