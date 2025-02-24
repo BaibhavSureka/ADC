@@ -42,32 +42,6 @@ app.get("/api/fda/drug-trends", async (req, res) => {
   }
 });
 
-// Treatment centers (example using findtreatment.gov API)
-app.get("/api/treatment-centers", async (req, res) => {
-  const { lat, lon, limitType = 2, limitValue = 20000 } = req.query; // Default: 20km radius
-
-  if (!lat || !lon) {
-    return res
-      .status(400)
-      .json({ error: "Latitude and Longitude are required" });
-  }
-
-  try {
-    const response = await fetch(
-      `https://findtreatment.gov/locator/exportsAsJson/v2?sAddr=${lat},${lon}&limitType=${limitType}&limitValue=${limitValue}`
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch treatment centers");
-    }
-
-    const data = await response.json();
-    res.json(data.rows || []);
-  } catch (error) {
-    console.error("Error fetching treatment centers:", error);
-    res.status(500).json({ error: "Failed to fetch treatment centers" });
-  }
-});
 
 // Drug details from DrugBank (placeholder)
 // app.get("/api/drug-details", async (req, res) => {

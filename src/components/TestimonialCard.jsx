@@ -16,4 +16,4 @@ const TestimonialCard = ({ name, image, testimonial }) => {
   );
 };
 
-export default TestimonialCard; // ✅ Corrected export
+export default TestimonialCard; 

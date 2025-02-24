@@ -14,7 +14,7 @@ function App() {
       <div className="flex flex-col min-h-screen">
         <Header />
         <main className="flex-grow">
-          <Routes> {/* ✅ Use Routes instead of Switch */}
+          <Routes>
             <Route path="/" element={<Home />} /> {/* ✅ Use element={} instead of component={} */}
             <Route path="/events" element={<Events />} />
             <Route path="/about" element={<About />} />
