@@ -1,0 +1,36 @@
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 1s ease-out forwards;
+}
+
+.stat-number {
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+}
+
+.bg-gradient {
+    background: linear-gradient(135deg, #f5f5dc 0%, #e8e8d5 100%);
+}
+
+/* Custom styling for CountUp animation */
+.countup-wrapper {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.countup-wrapper.visible {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}

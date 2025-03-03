@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Bar } from "react-chartjs-2";
+import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import { Bar } from 'react-chartjs-2';
 import {
   BarChart,
   Bar as RechartsBar,
@@ -8,10 +9,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from "recharts";
-import Input from "@/components/ui/Input";
-import Button from "@/components/ui/Button";
-import { Loader } from "lucide-react";
+} from 'recharts';
+import { Loader } from 'lucide-react';
 
 // Default VIT Vellore location
 const DEFAULT_LOCATION = "VIT Vellore, Tamil Nadu, 632014";
@@ -30,7 +29,7 @@ const IMPORTANT_FACILITIES = [
   }
 ];
 
-const Dashboard = () => {
+const Resources = () => {
   const [graphData, setGraphData] = useState(null);
   const [drugStats, setDrugStats] = useState([]);
   const [drugTrends, setDrugTrends] = useState([]);
@@ -65,30 +64,24 @@ const Dashboard = () => {
         clearTimeout(searchTimeout);
       }
     };
-  }, []);
+  }, [searchTimeout]); // Added searchTimeout to dependencies
 
   const fetchGraphData = async () => {
     try {
-      const response = await fetch("YOUR_GRAPH_API_URL");
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (!data.labels || !data.values) {
-        throw new Error("Invalid graph data format");
-      }
-
-      setGraphData(data);
+      // Simulating API response since the actual API URL wasn't provided
+      const mockData = {
+        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        values: [65, 59, 80, 81, 56, 55]
+      };
+      setGraphData(mockData);
     } catch (err) {
-      // console.error("Error fetching graph data:", err);
-      // setError("Failed to load graph data. Check API response.");
+      console.error("Error fetching graph data:", err);
     }
   };
 
   const fetchDrugStats = async () => {
     try {
+      setLoading(true);
       const response = await fetch(
         "https://api.fda.gov/drug/event.json?count=patient.reaction.reactionmeddrapt.exact&limit=10"
       );
@@ -100,6 +93,8 @@ const Dashboard = () => {
     } catch (error) {
       console.error("Drug Stats Fetch Error:", error);
       setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -376,48 +371,18 @@ const Dashboard = () => {
       bounds.extend([centerLat, centerLon]); // Include search location in bounds
       
       treatmentCenters.forEach(center => {
-        // Create custom icon based on facility type
-        let iconUrl = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png';
-        let iconSize = [25, 41];
+        // Standard marker
+        const marker = L.marker([center.lat, center.lon])
+          .addTo(mapRef.current)
+          .bindPopup(`
+            <b>${center.name}</b><br>
+            <strong>Type:</strong> ${center.category}<br>
+            <strong>Address:</strong> ${center.address}<br>
+            <strong>Distance:</strong> ${center.distance ? center.distance.toFixed(1) + ' km' : 'N/A'}<br>
+            <a href="https://www.openstreetmap.org/directions?from=${centerLat},${centerLon}&to=${center.lat},${center.lon}" target="_blank">Get Directions</a>
+          `);
         
-        // Create special icon for important facilities
-        if (center.important) {
-          const markerHtml = `
-            <div style="background-color: #FF4500; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>
-          `;
-          
-          const icon = L.divIcon({
-            html: markerHtml,
-            className: 'important-marker',
-            iconSize: [16, 16]
-          });
-          
-          const marker = L.marker([center.lat, center.lon], {icon: icon})
-            .addTo(mapRef.current)
-            .bindPopup(`
-              <b>${center.name}</b><br>
-              <strong>Type:</strong> ${center.category}<br>
-              <strong>Address:</strong> ${center.address}<br>
-              <strong>Distance:</strong> ${center.distance ? center.distance.toFixed(1) + ' km' : 'N/A'}<br>
-              <a href="https://www.openstreetmap.org/directions?from=${centerLat},${centerLon}&to=${center.lat},${center.lon}" target="_blank">Get Directions</a>
-            `);
-          
-          markersRef.current.push(marker);
-        } else {
-          // Standard marker
-          const marker = L.marker([center.lat, center.lon])
-            .addTo(mapRef.current)
-            .bindPopup(`
-              <b>${center.name}</b><br>
-              <strong>Type:</strong> ${center.category}<br>
-              <strong>Address:</strong> ${center.address}<br>
-              <strong>Distance:</strong> ${center.distance ? center.distance.toFixed(1) + ' km' : 'N/A'}<br>
-              <a href="https://www.openstreetmap.org/directions?from=${centerLat},${centerLon}&to=${center.lat},${center.lon}" target="_blank">Get Directions</a>
-            `);
-          
-          markersRef.current.push(marker);
-        }
-        
+        markersRef.current.push(marker);
         bounds.extend([center.lat, center.lon]);
       });
       
@@ -449,143 +414,268 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Healthcare Dashboard</h1>
-      {error && <p className="text-red-500">{error}</p>}
+    <div style={{ backgroundColor: '#f5f5dc' }} className="pt-20">
+      {/* Hero Section */}
+     <div className="container mx-auto px-6 py-12">
+  <div className="flex flex-col md:flex-row items-center justify-start gap-6">
+    <div className="md:w-1/2 pl-6">
+      <h1 className="text-5xl font-bold text-gray-800 mb-6">Our Resources</h1>
+      <p className="text-gray-700 text-lg max-w-lg">
+        Explore our extensive collection of educational materials, personal stories, and interactive tools 
+        designed to help college students understand the impact of substance abuse, access support services, 
+        and make informed choices for their well-being.
+      </p>
+    </div>
+    <div className="md:w-1/2 pr-6 flex justify-center">
+      <img 
+        src="/image.png" 
+        alt="Person with resources" 
+        className="max-w-full h-auto"
+      />
+    </div>
+  </div>
+</div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div>
-          <Input
-            type="text"
-            placeholder="Enter drug name..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="p-2 border rounded w-full"
-          />
-          <Button 
-            onClick={fetchDrugTrends} 
-            disabled={loading} 
-            className="mt-2 w-full"
-          >
-            {loading ? <Loader className="animate-spin mr-2" size={16} /> : null}
-            Search Drug Trends
-          </Button>
-        </div>
-        <div>
-          <Input
-            type="text"
-            placeholder="Enter location (e.g., city, state)..."
-            value={locationSearch}
-            onChange={(e) => setLocationSearch(e.target.value)}
-            className="p-2 border rounded w-full"
-          />
-          <Button 
-            onClick={fetchTreatmentCenters} 
-            disabled={loading} 
-            className="mt-2 w-full"
-          >
-            {loading ? <Loader className="animate-spin mr-2" size={16} /> : null}
-            Find Nearby Facilities (Top 10)
-          </Button>
+
+      {/* Personalized Support Section */}
+      <div className="container mx-auto px-6 py-8">
+        <h2 className="text-center text-gray-700 text-xl mb-12">Personalized Support</h2>
+        
+        <h2 className="text-center text-3xl font-bold text-gray-800 mb-16">Navigating Substance Abuse Challenges</h2>
+        
+        <div className="flex flex-col md:flex-row justify-center gap-16 mb-16">
+          {/* Coping Strategies Card */}
+          <div className="flex flex-col items-center max-w-sm">
+            <div className="bg-[#f8d7c4]">
+              <img src="/coping.png" alt="Coping Strategies Icon" className="h-20 w-20" />
+            </div>
+            <h3 className="text-2xl font-semibold text-gray-800 mb-4 text-center">Coping Strategies</h3>
+            <p className="text-gray-700 text-center">
+              Discover practical coping mechanisms and evidence-based approaches to address 
+              substance abuse and promote overall wellbeing
+            </p>
+            <button className="mt-8 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md">
+              Explore Now
+            </button>
+          </div>
+
+          {/* Wellness Resources Card */}
+          <div className="flex flex-col items-center max-w-sm">
+            <div className="bg-[#b8d8d8]">
+              <img src="/wellness.png" alt="Wellness Resources Icon" className="h-20 w-20" />
+            </div>
+            <h3 className="text-2xl font-semibold text-gray-800 mb-4 text-center">Wellness Resources</h3>
+            <p className="text-gray-700 text-center">
+              Access a curated collection of educational materials, personal stories, and wellness 
+              resources to support your journey
+            </p>
+            <button className="mt-8 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md">
+              Start Exploring
+            </button>
+          </div>
         </div>
       </div>
 
-      {graphData && (
-        <div className="mb-6 p-4 bg-white rounded shadow">
-          <h2 className="text-xl font-bold mb-2">Drug Data Analysis</h2>
-          <div className="w-full h-64">
-            <Bar
-              data={{
-                labels: graphData.labels,
-                datasets: [
-                  {
-                    label: "Data",
-                    data: graphData.values,
-                    backgroundColor: "#4CAF50",
-                  },
-                ],
-              }}
-              options={{ responsive: true, maintainAspectRatio: false }}
-            />
-          </div>
-        </div>
-      )}
+      
 
-      <div className="mb-6 p-4 bg-white rounded shadow">
-        <h2 className="text-xl font-bold mb-2">Drug Reaction Statistics</h2>
-        <div className="w-full h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={drugStats}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="term" />
-              <YAxis />
-              <Tooltip />
-              <RechartsBar dataKey="count" fill="#3b82f6" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {drugTrends.length > 0 && (
-        <div className="mb-6 p-4 bg-white rounded shadow">
-          <h2 className="text-xl font-bold mb-2">Drug Trend Over Time</h2>
-          <div className="w-full h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={drugTrends}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="time" />
-                <YAxis />
-                <Tooltip />
-                <RechartsBar dataKey="count" fill="#22c55e" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
-
-      {mapVisible && (
-        <div className="p-4 bg-white rounded shadow">
-          <h2 className="text-xl font-bold mb-2">Top 10 Healthcare Facilities Near {locationSearch}</h2>
-          <div className="flex flex-col md:flex-row gap-4">
-            <div ref={mapContainerRef} className="w-full md:w-1/2 h-96 border rounded"></div>
-            
-            <div className="w-full md:w-1/2">
-              {treatmentCenters.length > 0 ? (
-                <div className="h-96 overflow-y-auto pr-2">
-                  <h3 className="text-lg font-semibold mb-2">Found {treatmentCenters.length} nearby facilities:</h3>
-                  <ul className="space-y-3">
-                    {treatmentCenters.map((center) => (
-                      <li key={center.id} className="p-3 bg-gray-50 rounded shadow-sm hover:shadow transition border-l-4 border-blue-500">
-                        <p className="font-medium text-blue-600">
-                          {center.name}
-                          {center.important && <span className="ml-2 text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">Major</span>}
-                        </p>
-                        <p className="text-sm font-medium text-gray-700">{center.category}</p>
-                        <p className="text-sm text-gray-600">{center.address}</p>
-                        <p className="text-sm text-gray-600">
-                          <strong>Distance:</strong> {center.distance ? center.distance.toFixed(1) + ' km' : 'N/A'}
-                        </p>
-                        <a 
-                          href={`https://www.openstreetmap.org/directions?from=${DEFAULT_COORDS.lat},${DEFAULT_COORDS.lon}&to=${center.lat},${center.lon}`} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="mt-2 inline-block text-sm text-blue-500 hover:text-blue-700"
-                        >
-                          Get Directions
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
+      {/* FAQ Section */}
+      <div className="container mx-auto px-6 py-12">
+        <h2 className="text-4xl font-bold text-gray-800 mb-16 text-center">Frequently Asked Questions</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* FAQ Card 1 */}
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="p-6">
+              <div className="flex justify-center mb-4">
+                <div className="bg-[#b8d8d8]">
+                  <img src="/1st.png" alt="Leaf Icon" className="h-16 w-16" />
                 </div>
-              ) : (
-                <p className="text-center py-10">No healthcare facilities found in this location. Try a different search term or location.</p>
-              )}
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-4 text-center">What is Substance Abuse?</h3>
+              <p className="text-gray-600 text-sm">
+                Substance abuse refers to the harmful or excessive use of drugs, alcohol, or other substances, often 
+                leading to physical, mental, and social consequences. It's a complex issue that can impact college students...
+              </p>
+              <div className="mt-6 text-center">
+                <button className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md">
+                  Find Answers
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* FAQ Card 2 */}
+          <div className="bg-green-600 rounded-lg shadow-md overflow-hidden">
+            <div className="p-6">
+              <div className="flex justify-center mb-4">
+                <div className="bg-white  ">
+                  <img src="/2nd.png" alt="Leaf Icon" className="h-16 w-16" />
+                </div>
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-4 text-center">Understanding the Risks</h3>
+              <p className="text-white text-sm">
+                Substance abuse can have far-reaching effects on a student's academic performance, physical and mental 
+                health, and overall well-being. It's crucial to be aware of the potential risks...
+              </p>
+              <div className="mt-6 text-center">
+                <button className="bg-white text-green-600 hover:bg-gray-100 font-medium py-2 px-6 rounded-md">
+                  Learn More
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* FAQ Card 3 */}
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="p-6">
+              <div className="flex justify-center mb-4">
+                <div className="bg-[#b8d8d8]">
+                  <img src="/3rd.png" alt="Leaf Icon" className="h-16 w-16" />
+                </div>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-4 text-center">Accessing Support</h3>
+              <p className="text-gray-600 text-sm">
+                Our organization offers a range of confidential support services, including counseling, support 
+                groups, and referrals to specialized treatment providers...
+              </p>
+              <div className="mt-6 text-center">
+                <button className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md">
+                  Get Help
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* API Integration Section */}
+      <div className="container mx-auto px-6 py-8 bg-gradient-to-r from-[#f5f5dc] to-[#b8d8d8] rounded-lg shadow-md mb-12">
+        <h2 className="text-3xl font-bold text-gray-800 mb-8 text-center">Healthcare Resources</h2>
+        
+        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div>
+            <label className="block text-gray-700 mb-2">Search for Drug Information</label>
+            <div className="flex">
+              <input
+                type="text"
+                placeholder="Enter drug name..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="p-2 border rounded w-full"
+              />
+              <button 
+                onClick={fetchDrugTrends} 
+                disabled={loading} 
+                className="ml-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md"
+              >
+                {loading ? <Loader className="animate-spin" size={16} /> : "Search"}
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="block text-gray-700 mb-2">Find Nearby Healthcare Facilities</label>
+            <div className="flex">
+              <input
+                type="text"
+                placeholder="Enter location (e.g., city, state)..."
+                value={locationSearch}
+                onChange={(e) => setLocationSearch(e.target.value)}
+                className="p-2 border rounded w-full"
+              />
+              <button 
+                onClick={fetchTreatmentCenters} 
+                disabled={loading} 
+                className="ml-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md"
+              >
+                {loading ? <Loader className="animate-spin" size={16} /> : "Find"}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Drug Statistics */}
+        {drugStats.length > 0 && (
+          <div className="bg-white p-4 rounded-lg shadow-md mb-8">
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">Drug Reaction Statistics</h3>
+            <div className="w-full h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={drugStats}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="term" />
+                  <YAxis />
+                  <Tooltip />
+                  <RechartsBar dataKey="count" fill="#4CAF50" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {/* Drug Trends */}
+        {drugTrends.length > 0 && (
+          <div className="bg-white p-4 rounded-lg shadow-md mb-8">
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">Drug Trend Over Time: {search}</h3>
+            <div className="w-full h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={drugTrends}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="time" />
+                  <YAxis />
+                  <Tooltip />
+                  <RechartsBar dataKey="count" fill="#22c55e" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {/* Map and Treatment Centers */}
+        {mapVisible && (
+          <div className="bg-white p-4 rounded-lg shadow-md">
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">Healthcare Facilities Near {locationSearch}</h3>
+            <div className="flex flex-col md:flex-row gap-4">
+              <div ref={mapContainerRef} className="w-full md:w-1/2 h-96 border rounded"></div>
+              
+              <div className="w-full md:w-1/2">
+                {treatmentCenters.length > 0 ? (
+                  <div className="h-96 overflow-y-auto pr-2">
+                    <h4 className="text-lg font-semibold mb-2">Found {treatmentCenters.length} nearby facilities:</h4>
+                    <ul className="space-y-3">
+                      {treatmentCenters.map((center) => (
+                        <li key={center.id} className="p-3 bg-gray-50 rounded shadow-sm hover:shadow transition border-l-4 border-green-500">
+                          <p className="font-medium text-green-600">
+                            {center.name}
+                            {center.important && <span className="ml-2 text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">Major</span>}
+                          </p>
+                          <p className="text-sm font-medium text-gray-700">{center.category}</p>
+                          <p className="text-sm text-gray-600">{center.address}</p>
+                          <p className="text-sm text-gray-600">
+                            <strong>Distance:</strong> {center.distance ? center.distance.toFixed(1) + ' km' : 'N/A'}
+                          </p>
+                          <a 
+                            href={`https://www.openstreetmap.org/directions?from=${DEFAULT_COORDS.lat},${DEFAULT_COORDS.lon}&to=${center.lat},${center.lon}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="mt-2 inline-block text-sm text-green-500 hover:text-green-700"
+                          >
+                            Get Directions
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <p className="text-center py-10">No healthcare facilities found in this location. Try a different search term or location.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-export default Dashboard;
+export default Resources;

@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'; // ✅ Import Routes instead of Switch
 import Header from './components/Header';
-import Footer from './components/Footer';
 import Home from './pages/Home';
 import Events from './pages/Events';
 import About from './pages/About';
@@ -22,7 +21,6 @@ function App() {
             <Route path="/resources" element={<Resources />} />
           </Routes>
         </main>
-        <Footer />
       </div>
     </Router>
   );
