@@ -654,7 +654,7 @@ export default function ADCWebsite() {
                   <CountUp
                     start={0}
                     end={stat.number}
-                    duration={2.5}
+                    duration={4.5}
                     separator=","
                     useEasing={true}
                   />
